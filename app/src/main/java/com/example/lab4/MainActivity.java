@@ -42,13 +42,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dbHelper = new DBHelper(this);
+        db = dbHelper.getWritableDatabase();
         db = dbHelper.getReadableDatabase();
         listView = findViewById(R.id.listView);
 
         songList = new ArrayList<>();
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, songList);
         listView.setAdapter(adapter);
-
 
         loadSongsFromDatabase();
         startFetchingSongs();
@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             startFetchingSongs();
         }
+
     }
 
     // Метод проверки подключения к интернету
@@ -68,13 +69,24 @@ public class MainActivity extends AppCompatActivity {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-
+    //void addSongToDatabase(String track) {
+    //    SQLiteDatabase db = dbHelper.getWritableDatabase();
+   //     String query = "INSERT INTO songs (track) VALUES (?)";
+    //    db.execSQL(query, new Object[]{track});
+    //    db.close();
+   // }
+    //public void addSong(String trackTitle) {
+      //SQLiteDatabase db = dbHelper.getWritableDatabase();
+       // ContentValues values = new ContentValues();
+      //  values.put("TrackTitle", trackTitle);
+      //  db.insert("songs", null, values);
+   // }
     // Регулярный опрос API каждые 60 секунд
     private void startFetchingSongs() {
         final Runnable fetchTask = new Runnable() {
             @Override
             public void run() {
-                new FetchSongTask().execute();
+                new FetchSongTask(MainActivity.this).execute();
                 handler.postDelayed(this, 60000);
             }
         };
@@ -82,13 +94,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Загрузка данных из базы данных и отображение
-    private void loadSongsFromDatabase() {
-        Cursor cursor = dbHelper.getAllSongs();
+    void loadSongsFromDatabase() {
+        Cursor cursor = db.rawQuery("SELECT * FROM songs", null);
         if (cursor.moveToFirst()) {
             do {
                 @SuppressLint("Range") String track = cursor.getString(cursor.getColumnIndex("TrackTitle"));
-                @SuppressLint("Range") String timestamp = cursor.getString(cursor.getColumnIndex("Timestamp"));
-                songList.add(track + " " + timestamp);
+                //@SuppressLint("Range") String timestamp = cursor.getString(cursor.getColumnIndex("Timestamp"));
+                songList.add(track);
             } while (cursor.moveToNext());
         }
         cursor.close();

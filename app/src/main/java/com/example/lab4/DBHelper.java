@@ -6,6 +6,8 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import androidx.annotation.NonNull;
+
 public class DBHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "songsDB";
     private static final int DATABASE_VERSION = 1;
@@ -18,15 +20,22 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE songs (" +
                 "ID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "TrackTitle TEXT," +
-                "Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP" +
+                "TrackTitle TEXT" +
                 ");");
+        insertInitialData(db);
+    }
+    private void insertInitialData(SQLiteDatabase db) {
+        // Вставляем 5 записей в обновленную таблицу
+        ContentValues values = new ContentValues();
+        values.put("TrackTitle", "Трек");
+        db.insert("songs", null, values);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DROP TABLE IF EXISTS songs");
         onCreate(db);
+        insertInitialData(db);
     }
 
     public void addSong(String trackTitle) {
@@ -34,12 +43,13 @@ public class DBHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put("TrackTitle", trackTitle);
         db.insert("songs", null, values);
-        db.close();
     }
 
-    public Cursor getAllSongs() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        return db.rawQuery("SELECT * FROM songs ORDER BY ID DESC", null);
-    }
+
+
+    // public Cursor getAllSongs() {
+    //    SQLiteDatabase db = this.getReadableDatabase();
+    //    return db.rawQuery("SELECT * FROM songs ORDER BY ID DESC", null);
+    //}
 }
 

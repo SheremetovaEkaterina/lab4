@@ -1,5 +1,10 @@
 package com.example.lab4;
 
+import static android.app.PendingIntent.getActivity;
+
+import android.annotation.SuppressLint;
+import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
@@ -10,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -18,8 +24,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class FetchSongTask extends AsyncTask<Void, Void, String> {
-    private DBHelper dbHelper;
-    private DBHelper addSong;
+    private final Context context;
+    DBHelper dbHelper;
+    SQLiteDatabase db;
+    MainActivity MainActivity;
+   // private MainActivity activity;
 
 
     @Override
@@ -46,6 +55,10 @@ public class FetchSongTask extends AsyncTask<Void, Void, String> {
             return null;
         }
     }
+    public FetchSongTask(Context context) {
+        this.context = context;
+    }
+
 
     @Override
     protected void onPostExecute(String result) {
@@ -58,13 +71,17 @@ public class FetchSongTask extends AsyncTask<Void, Void, String> {
                 if (historyArray.length() > 0) {
                     JSONObject firstSong = historyArray.getJSONObject(0);
                     String track = firstSong.getString("title");
+                    if(!isLastSongInDatabase(track)) {
+                        dbHelper = new DBHelper(context);
+                        db = dbHelper.getWritableDatabase();
+                        ContentValues values = new ContentValues();
+                        values.put("TrackTitle", track);
+                        db.insert("songs", null, values);
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).loadSongsFromDatabase();
+                        }
+                    }// Обновляем список песен
 
-
-                    // Сравниваем с последней записью в базе данных
-                    if (!isLastSongInDatabase(track)) {
-                        addSongToDatabase(track);
-                        //loadSongsFromDatabase();  // Обновляем список песен
-                    }
                 }
 
             } catch (JSONException e) {
@@ -74,16 +91,13 @@ public class FetchSongTask extends AsyncTask<Void, Void, String> {
     }
 
 
-    private void addSongToDatabase(String track) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        String query = "INSERT INTO songs (track, timestamp) VALUES (?, ?)";
-        db.execSQL(query, new Object[]{track, System.currentTimeMillis()});
-        db.close();
-    }
+
+
 
     private boolean isLastSongInDatabase(String track) {
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM songs ORDER BY timestamp DESC LIMIT 1", null);
+        dbHelper = new DBHelper(context);
+        db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM songs ORDER BY ID DESC LIMIT 1", null);
 
         boolean exists = false;
         if (cursor.moveToFirst()) {
